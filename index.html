@@ -85,11 +85,11 @@
         const paramsRaw = document.getElementById('params').value;
         const output = document.getElementById('output');
         try {
-          const fixedText = text
+          const fixedParams = paramsRaw
             .replace(/'/g, '"') // replace all ' with "
             .replace(/,\s*]/g, ']') // remove trailing commas in arrays
             .replace(/,\s*}/g, '}'); // remove trailing commas in objects
-          const params = JSON.parse(fixedText);
+          const params = JSON.parse(fixedParams);
           let finalQuery = '';
           if (query.includes('?')) {
             finalQuery = injectParams(query, params);
