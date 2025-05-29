@@ -1,102 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SQL Param Converter</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    textarea, input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      font-family: monospace;
-    }
-    label {
-      margin-top: 20px;
-      display: block;
-      font-weight: bold;
-    }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    pre {
-      white-space: pre-wrap;
-      background-color: #e0e0e0;
-      padding: 10px;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <h1>SQL Param Converter</h1>
-  <label for="query">SQL Query (use ? or $1, $2...)</label>
-  <textarea id="query" rows="8"></textarea>
-
-  <label for="params">Params (JSON array)</label>
-  <textarea id="params" rows="4">[1, [2, 3], 4]</textarea>
-
-  <button onclick="convertQuery()">Convert</button>
-
-  <label>Output</label>
-  <pre id="output"></pre>
-
-  <script>
-    function escapeValue(val) {
-      if (Array.isArray(val)) {
-        return `${val.map(escapeValue).join(', ')}`;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQL Param Converter</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f9f9f9;
       }
-      if (typeof val === 'string') {
-        return `'${val.replace(/'/g, "''")}'`;
+      textarea,
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        font-family: monospace;
       }
-      if (val === null || val === undefined) {
-        return 'NULL';
+      label {
+        margin-top: 20px;
+        display: block;
+        font-weight: bold;
       }
-      return val.toString();
-    }
+      button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      pre {
+        white-space: pre-wrap;
+        background-color: #e0e0e0;
+        padding: 10px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SQL Param Converter</h1>
+    <label for="query">SQL Query (use ? or $1, $2...)</label>
+    <textarea id="query" rows="8"></textarea>
 
-    function injectParams(query, params) {
-      let paramIndex = 0;
-      return query.replace(/\?/g, () => {
-        if (paramIndex >= params.length) throw new Error('Thiếu giá trị param');
-        return escapeValue(params[paramIndex++]);
-      });
-    }
+    <label for="params">Params (JSON array)</label>
+    <textarea id="params" rows="4">[1, [2, 3], 4]</textarea>
 
-    function injectParamsPostgres(query, params) {
-      return query.replace(/\$(\d+)/g, (_, indexStr) => {
-        const index = parseInt(indexStr, 10) - 1;
-        if (index >= params.length) throw new Error('Thiếu giá trị param');
-        return escapeValue(params[index]);
-      });
-    }
+    <button onclick="convertQuery()">Convert</button>
 
-    function convertQuery() {
-      const query = document.getElementById('query').value;
-      const paramsRaw = document.getElementById('params').value;
-      const output = document.getElementById('output');
-      try {
-        const params = JSON.parse(paramsRaw);
-        let finalQuery = '';
-        if (query.includes('?')) {
-          finalQuery = injectParams(query, params);
-        } else if (query.match(/\$\d+/)) {
-          finalQuery = injectParamsPostgres(query, params);
-        } else {
-          finalQuery = query;
+    <label>Output</label>
+    <pre id="output"></pre>
+
+    <script>
+      function escapeValue(val) {
+        if (Array.isArray(val)) {
+          return `${val.map(escapeValue).join(', ')}`;
         }
-        output.textContent = finalQuery;
-      } catch (err) {
-        output.textContent = 'Lỗi: ' + err.message;
+        if (typeof val === 'string') {
+          return `'${val.replace(/'/g, "''")}'`;
+        }
+        if (val === null || val === undefined) {
+          return 'NULL';
+        }
+        return val.toString();
       }
-    }
-  </script>
-</body>
+
+      function injectParams(query, params) {
+        let paramIndex = 0;
+        return query.replace(/\?/g, () => {
+          if (paramIndex >= params.length)
+            throw new Error('Thiếu giá trị param');
+          return escapeValue(params[paramIndex++]);
+        });
+      }
+
+      function injectParamsPostgres(query, params) {
+        return query.replace(/\$(\d+)/g, (_, indexStr) => {
+          const index = parseInt(indexStr, 10) - 1;
+          if (index >= params.length) throw new Error('Thiếu giá trị param');
+          return escapeValue(params[index]);
+        });
+      }
+
+      function convertQuery() {
+        const query = document.getElementById('query').value;
+        const paramsRaw = document.getElementById('params').value;
+        const output = document.getElementById('output');
+        try {
+          const fixedText = text
+            .replace(/'/g, '"') // replace all ' with "
+            .replace(/,\s*]/g, ']') // remove trailing commas in arrays
+            .replace(/,\s*}/g, '}'); // remove trailing commas in objects
+          const params = JSON.parse(fixedText);
+          let finalQuery = '';
+          if (query.includes('?')) {
+            finalQuery = injectParams(query, params);
+          } else if (query.match(/\$\d+/)) {
+            finalQuery = injectParamsPostgres(query, params);
+          } else {
+            finalQuery = query;
+          }
+          output.textContent = finalQuery;
+        } catch (err) {
+          output.textContent = 'Lỗi: ' + err.message;
+        }
+      }
+    </script>
+  </body>
 </html>
